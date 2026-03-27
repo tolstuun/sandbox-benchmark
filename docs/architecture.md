@@ -8,12 +8,12 @@
 
 The configurator is a C# WinForms application targeting .NET 10 on Windows. Its role is to:
 
-- present available safe checks
-- load and save profile selections
-- prepare build inputs for the runner
-- trigger local build steps for the configured benchmark package
+- load the default profile from disk
+- display and edit core profile fields
+- display and edit the selected check list
+- save profile selections back to disk
 
-The configurator is the operator-facing entry point for assembling a benchmark run in a transparent way.
+The current configurator is intentionally minimal. It edits `profiles/default.json` directly and does not yet orchestrate builds.
 
 ## Builder Flow
 
