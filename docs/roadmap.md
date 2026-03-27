@@ -24,6 +24,7 @@
 
 - Add the first passive environment and fidelity checks.
 - Record raw values only for the initial environment-fidelity checks, with no thresholds or detection logic.
+- Port passive Pafish-derived checks that fit the transparent benchmark scope.
 - Add the first bounded timing measurements.
 - Add the first bounded user-presence checks.
 - Keep every check transparent, measurement-only, and free of behavior changes based on observations.

@@ -66,6 +66,7 @@ The current runner flow reads `profiles/default.json`, executes only the request
 - `env.cpu.logical_processor_count`
 - `env.memory.total_physical_mb`
 - `env.storage.system_drive_total_gb`
+- passive Pafish-derived CPU, generic sandbox, Sandboxie, Wine, QEMU, Bochs, VirtualBox, and VMware checks
 
 ## Checks Model
 
@@ -78,7 +79,7 @@ Checks are organized as explicit, safe benchmark units. Each check should eventu
 
 Checks remain limited to passive environment or fidelity observation, bounded timing measurement, and bounded user-presence measurement. Unsafe categories are out of scope.
 
-The first environment-fidelity checks are value-only observations. They record processor count, total physical memory, and system drive size without thresholds or interpretation logic.
+The current passive Pafish-derived checks only inspect raw system facts and artifacts such as CPUID values, usernames, file paths, registry keys, files, devices, windows, process names, MAC prefixes, and selected WMI strings. They do not alter execution flow.
 
 ## Profiles
 

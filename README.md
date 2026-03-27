@@ -52,7 +52,8 @@ The repository currently contains:
 - two synthetic demo checks, `demo.runner_start` and `demo.profile_loaded`, to validate registry resolution and execution
 - three passive environment-fidelity checks that only record values:
   `env.cpu.logical_processor_count`, `env.memory.total_physical_mb`, and `env.storage.system_drive_total_gb`
+- a larger passive Pafish-derived check set covering CPU facts, generic sandbox heuristics, Sandboxie, Wine, QEMU, Bochs, VirtualBox, and VMware artifact inspection
 
-No VM, sandbox, debugger, evasion, threshold, or detection-logic checks are implemented.
+No anti-debug, anti-instrumentation, stealth, code injection, or evasion-oriented behavior is implemented.
 
 See [docs/architecture.md](/C:/dev/sandbox-benchmark/docs/architecture.md) and [docs/roadmap.md](/C:/dev/sandbox-benchmark/docs/roadmap.md) for the planned structure and phased delivery.
