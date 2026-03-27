@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/configurator/">
+    <Project Path="configurator/SandboxBenchmark.Configurator/SandboxBenchmark.Configurator.csproj" />
+  </Folder>
+</Solution>

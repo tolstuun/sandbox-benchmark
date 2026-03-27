@@ -1,0 +1,11 @@
+{
+  "profile_id": "default",
+  "name": "Default Profile",
+  "version": 1,
+  "checks": [
+    "demo.runner_start"
+  ],
+  "output_directory": "logs",
+  "console_logging_enabled": true,
+  "json_logging_enabled": true
+}

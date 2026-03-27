@@ -1,0 +1,13 @@
+.vs/
+**/bin/
+**/obj/
+**/out/
+**/build/
+artifacts/*
+logs/*
+!.gitkeep
+*.user
+*.suo
+*.VC.db
+*.VC.opendb
+*.pdb
