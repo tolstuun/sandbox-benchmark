@@ -31,7 +31,8 @@ This keeps configuration, build, execution, and result collection explicit and i
 
 The runner is a C++17 executable built with CMake and MSVC. Its role is to:
 
-- load the selected configuration or embedded selection set
+- load the selected profile from disk
+- resolve requested checks through an internal registry
 - execute every selected check
 - measure and collect results
 - write structured output to logs
@@ -53,7 +54,10 @@ The current status values are:
 - `error`
 - `unsupported`
 
-The initial runner flow emits one synthetic result, `demo.runner_start`, to validate startup, console logging, and JSON result writing without adding any real checks yet.
+The current runner flow reads `profiles/default.json`, executes only the requested registered checks, and emits `unsupported` results for unknown requested check IDs. The initial registered demo checks are:
+
+- `demo.runner_start`
+- `demo.profile_loaded`
 
 ## Checks Model
 
@@ -80,10 +84,12 @@ Profiles represent saved selections for repeatable runs. A profile is expected t
 
 Profiles allow the configurator and runner to produce consistent benchmark runs without hidden logic.
 
+The runner currently loads `profiles/default.json` at runtime and uses its `checks`, `output_directory`, `console_logging_enabled`, and `json_logging_enabled` values directly.
+
 ## Artifacts And Logs
 
 `artifacts/` holds generated outputs from the build flow, such as packaged runner binaries and related files. `logs/` holds runtime records produced by the runner, including benchmark results and execution metadata.
 
-The initial JSON log target is `logs/results.json`. It is intentionally simple and local so the project can stabilize the result contract before adding profile loading or real checks.
+The initial JSON log target is still `logs/results.json` through the default profile. It is intentionally simple and local so the project can stabilize the registry, profile-loading, and result contracts before adding real checks.
 
 Artifacts and logs should remain easy to inspect, easy to retain, and easy to compare across runs.

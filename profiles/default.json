@@ -3,7 +3,8 @@
   "name": "Default Profile",
   "version": 1,
   "checks": [
-    "demo.runner_start"
+    "demo.runner_start",
+    "demo.profile_loaded"
   ],
   "output_directory": "logs",
   "console_logging_enabled": true,

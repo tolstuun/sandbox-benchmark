@@ -9,12 +9,14 @@
 ## Phase 2: Config/Profile Model
 
 - Define a minimal profile schema for selected checks and bounded parameters.
+- Load the default profile at runner startup.
 - Add configurator support for loading, editing, and saving profiles.
 - Decide how the runner receives profile data during build or execution.
 
 ## Phase 3: Runner Result Schema And Logging
 
 - Define a stable result schema for run metadata, per-check outputs, timing, and errors.
+- Add the first minimal check registry and requested-check execution flow.
 - Implement consistent log file naming and output location behavior.
 - Make runner logging explicit and deterministic so benchmark output is easy to review.
 
