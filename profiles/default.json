@@ -4,7 +4,10 @@
   "version": 1,
   "checks": [
     "demo.runner_start",
-    "demo.profile_loaded"
+    "demo.profile_loaded",
+    "env.cpu.logical_processor_count",
+    "env.memory.total_physical_mb",
+    "env.storage.system_drive_total_gb"
   ],
   "output_directory": "logs",
   "console_logging_enabled": true,

@@ -23,6 +23,7 @@
 ## Phase 4: First Safe Checks
 
 - Add the first passive environment and fidelity checks.
+- Record raw values only for the initial environment-fidelity checks, with no thresholds or detection logic.
 - Add the first bounded timing measurements.
 - Add the first bounded user-presence checks.
 - Keep every check transparent, measurement-only, and free of behavior changes based on observations.

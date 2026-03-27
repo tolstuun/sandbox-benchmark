@@ -49,7 +49,9 @@ The repository currently contains:
 - a minimal internal check registry and execution pipeline
 - a minimal runner result contract with console output and JSON output in `logs/results.json`
 - two synthetic demo checks, `demo.runner_start` and `demo.profile_loaded`, to validate registry resolution and execution
+- three passive environment-fidelity checks that only record values:
+  `env.cpu.logical_processor_count`, `env.memory.total_physical_mb`, and `env.storage.system_drive_total_gb`
 
-No real environment, VM, sandbox, or evasion checks are implemented yet.
+No VM, sandbox, debugger, evasion, threshold, or detection-logic checks are implemented.
 
 See [docs/architecture.md](/C:/dev/sandbox-benchmark/docs/architecture.md) and [docs/roadmap.md](/C:/dev/sandbox-benchmark/docs/roadmap.md) for the planned structure and phased delivery.

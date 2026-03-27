@@ -54,10 +54,13 @@ The current status values are:
 - `error`
 - `unsupported`
 
-The current runner flow reads `profiles/default.json`, executes only the requested registered checks, and emits `unsupported` results for unknown requested check IDs. The initial registered demo checks are:
+The current runner flow reads `profiles/default.json`, executes only the requested registered checks, and emits `unsupported` results for unknown requested check IDs. The current registered checks are:
 
 - `demo.runner_start`
 - `demo.profile_loaded`
+- `env.cpu.logical_processor_count`
+- `env.memory.total_physical_mb`
+- `env.storage.system_drive_total_gb`
 
 ## Checks Model
 
@@ -69,6 +72,8 @@ Checks are organized as explicit, safe benchmark units. Each check should eventu
 - result fields produced by execution
 
 Checks remain limited to passive environment or fidelity observation, bounded timing measurement, and bounded user-presence measurement. Unsafe categories are out of scope.
+
+The first environment-fidelity checks are value-only observations. They record processor count, total physical memory, and system drive size without thresholds or interpretation logic.
 
 ## Profiles
 

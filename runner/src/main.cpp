@@ -1,4 +1,5 @@
 #include <chrono>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <functional>
@@ -9,6 +10,8 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
 
 enum class ResultStatus
 {
@@ -373,6 +376,104 @@ CheckResult RunDemoCheck(const std::string& check_id, const std::string& evidenc
     return MakeCheckResult(check_id, ResultStatus::not_detected, evidence, started_at, finished_at);
 }
 
+CheckResult RunLogicalProcessorCountCheck()
+{
+    const auto started_at = std::chrono::system_clock::now();
+
+    SYSTEM_INFO system_info{};
+    GetSystemInfo(&system_info);
+
+    std::ostringstream evidence;
+    evidence << "logical processors: " << system_info.dwNumberOfProcessors;
+
+    const auto finished_at = std::chrono::system_clock::now();
+    return MakeCheckResult(
+        "env.cpu.logical_processor_count",
+        ResultStatus::not_detected,
+        evidence.str(),
+        started_at,
+        finished_at);
+}
+
+CheckResult RunTotalPhysicalMemoryCheck()
+{
+    const auto started_at = std::chrono::system_clock::now();
+
+    MEMORYSTATUSEX memory_status{};
+    memory_status.dwLength = sizeof(memory_status);
+    if (!GlobalMemoryStatusEx(&memory_status))
+    {
+        const auto finished_at = std::chrono::system_clock::now();
+        return MakeCheckResult(
+            "env.memory.total_physical_mb",
+            ResultStatus::error,
+            "failed to query total physical memory",
+            started_at,
+            finished_at);
+    }
+
+    const std::uint64_t total_physical_mb =
+        static_cast<std::uint64_t>(memory_status.ullTotalPhys / (1024ULL * 1024ULL));
+
+    std::ostringstream evidence;
+    evidence << "total physical memory mb: " << total_physical_mb;
+
+    const auto finished_at = std::chrono::system_clock::now();
+    return MakeCheckResult(
+        "env.memory.total_physical_mb",
+        ResultStatus::not_detected,
+        evidence.str(),
+        started_at,
+        finished_at);
+}
+
+CheckResult RunSystemDriveTotalSizeCheck()
+{
+    const auto started_at = std::chrono::system_clock::now();
+
+    char windows_directory[MAX_PATH]{};
+    const UINT windows_directory_length = GetWindowsDirectoryA(windows_directory, MAX_PATH);
+    if (windows_directory_length == 0 || windows_directory_length >= MAX_PATH)
+    {
+        const auto finished_at = std::chrono::system_clock::now();
+        return MakeCheckResult(
+            "env.storage.system_drive_total_gb",
+            ResultStatus::error,
+            "failed to resolve windows directory",
+            started_at,
+            finished_at);
+    }
+
+    const std::filesystem::path windows_path(windows_directory);
+    const std::filesystem::path system_drive_root = windows_path.root_name() / windows_path.root_directory();
+
+    ULARGE_INTEGER total_bytes{};
+    if (!GetDiskFreeSpaceExA(system_drive_root.string().c_str(), nullptr, &total_bytes, nullptr))
+    {
+        const auto finished_at = std::chrono::system_clock::now();
+        return MakeCheckResult(
+            "env.storage.system_drive_total_gb",
+            ResultStatus::error,
+            "failed to query system drive size",
+            started_at,
+            finished_at);
+    }
+
+    const std::uint64_t total_gb =
+        static_cast<std::uint64_t>(total_bytes.QuadPart / (1024ULL * 1024ULL * 1024ULL));
+
+    std::ostringstream evidence;
+    evidence << "system drive total gb: " << total_gb;
+
+    const auto finished_at = std::chrono::system_clock::now();
+    return MakeCheckResult(
+        "env.storage.system_drive_total_gb",
+        ResultStatus::not_detected,
+        evidence.str(),
+        started_at,
+        finished_at);
+}
+
 std::map<std::string, CheckHandler> BuildCheckRegistry()
 {
     std::map<std::string, CheckHandler> registry;
@@ -387,6 +488,24 @@ std::map<std::string, CheckHandler> BuildCheckRegistry()
         []()
         {
             return RunDemoCheck("demo.profile_loaded", "profile loaded successfully");
+        });
+    registry.emplace(
+        "env.cpu.logical_processor_count",
+        []()
+        {
+            return RunLogicalProcessorCountCheck();
+        });
+    registry.emplace(
+        "env.memory.total_physical_mb",
+        []()
+        {
+            return RunTotalPhysicalMemoryCheck();
+        });
+    registry.emplace(
+        "env.storage.system_drive_total_gb",
+        []()
+        {
+            return RunSystemDriveTotalSizeCheck();
         });
     return registry;
 }
