@@ -218,15 +218,18 @@ public partial class MainForm : Form
         var artifactExeName = Path.GetFileName(sourceRunnerPath);
         var artifactRunnerPath = Path.Combine(artifactDirectory, artifactExeName);
         File.Copy(sourceRunnerPath, artifactRunnerPath, overwrite: true);
+        File.Copy(profilePath, Path.Combine(artifactDirectory, "profile.json"), overwrite: true);
 
         var manifest = new ArtifactManifest
         {
             BuildId = buildId,
             CreatedAt = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"),
             ProfilePath = profilePath,
+            ProfileFileName = "profile.json",
             SelectedChecks = profile.Checks,
             SourceRunnerPath = sourceRunnerPath,
-            ArtifactExeName = artifactExeName
+            ArtifactExeName = artifactExeName,
+            SelfContainedArtifact = true
         };
 
         var manifestPath = Path.Combine(artifactDirectory, "manifest.json");
@@ -313,6 +316,12 @@ internal sealed class ArtifactManifest
     [JsonPropertyName("source_runner_path")]
     public string SourceRunnerPath { get; set; } = string.Empty;
 
+    [JsonPropertyName("profile_file_name")]
+    public string ProfileFileName { get; set; } = "profile.json";
+
     [JsonPropertyName("artifact_exe_name")]
     public string ArtifactExeName { get; set; } = string.Empty;
+
+    [JsonPropertyName("self_contained_artifact")]
+    public bool SelfContainedArtifact { get; set; }
 }

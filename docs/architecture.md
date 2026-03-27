@@ -15,7 +15,7 @@ The configurator is a C# WinForms application targeting .NET 10 on Windows. Its 
 - run the local CMake runner build
 - copy the built runner and a small manifest into `artifacts/`
 
-The current configurator is intentionally minimal. It edits `profiles/default.json` directly, runs the local runner build commands, and stages the built executable plus a manifest in a timestamped artifact folder.
+The current configurator is intentionally minimal. It edits `profiles/default.json` directly, runs the local runner build commands, and stages the built executable, `profile.json`, and a manifest in a timestamped artifact folder.
 
 ## Builder Flow
 
@@ -24,7 +24,7 @@ The intended build flow is:
 1. The operator selects checks and options in the configurator.
 2. The configurator resolves or writes the selected profile/configuration data.
 3. The configurator invokes the runner build pipeline with local process execution.
-4. On success, the configurator writes a timestamped artifact folder under `artifacts/`.
+4. On success, the configurator writes a timestamped artifact folder under `artifacts/` containing the runner, `profile.json`, and `manifest.json`.
 5. The produced runner is executed separately and writes logs to `logs/`.
 
 This keeps configuration, build, execution, and result collection explicit and inspectable.
@@ -34,6 +34,7 @@ This keeps configuration, build, execution, and result collection explicit and i
 The runner is a C++17 executable built with CMake and MSVC. Its role is to:
 
 - load the selected profile from disk
+- support `--profile <path>` overrides
 - resolve requested checks through an internal registry
 - execute every selected check
 - measure and collect results
@@ -91,11 +92,11 @@ Profiles represent saved selections for repeatable runs. A profile is expected t
 
 Profiles allow the configurator and runner to produce consistent benchmark runs without hidden logic.
 
-The runner currently loads `profiles/default.json` at runtime and uses its `checks`, `output_directory`, `console_logging_enabled`, and `json_logging_enabled` values directly.
+The runner currently loads a profile from `--profile <path>` when provided. Otherwise, it expects `profile.json` beside the executable. It uses the loaded profile's `checks`, `output_directory`, `console_logging_enabled`, and `json_logging_enabled` values directly.
 
 ## Artifacts And Logs
 
-`artifacts/` holds generated outputs from the build flow, including copied runner binaries and per-build `manifest.json` files. `logs/` holds runtime records produced by the runner, including benchmark results and execution metadata.
+`artifacts/` holds generated outputs from the build flow, including copied runner binaries, local `profile.json` files, and per-build `manifest.json` files. `logs/` holds runtime records produced by the runner, including benchmark results and execution metadata.
 
 The initial JSON log target is still `logs/results.json` through the default profile. It is intentionally simple and local so the project can stabilize the registry, profile-loading, and result contracts before adding real checks.
 

@@ -602,11 +602,54 @@ std::vector<CheckResult> ExecuteRequestedChecks(
 
     return results;
 }
+
+std::filesystem::path GetExecutablePath()
+{
+    char executable_path_buffer[MAX_PATH]{};
+    const DWORD path_length = GetModuleFileNameA(nullptr, executable_path_buffer, MAX_PATH);
+    if (path_length == 0 || path_length >= MAX_PATH)
+    {
+        return {};
+    }
+
+    return std::filesystem::path(executable_path_buffer);
+}
+
+std::filesystem::path ResolveProfilePath(int argc, char* argv[])
+{
+    for (int index = 1; index < argc; ++index)
+    {
+        const std::string argument = argv[index];
+        if (argument == "--profile")
+        {
+            if (index + 1 >= argc)
+            {
+                return {};
+            }
+
+            return std::filesystem::path(argv[index + 1]);
+        }
+    }
+
+    const std::filesystem::path executable_path = GetExecutablePath();
+    if (executable_path.empty())
+    {
+        return {};
+    }
+
+    return executable_path.parent_path() / "profile.json";
+}
 } // namespace
 
-int main()
+int main(int argc, char* argv[])
 {
-    const std::filesystem::path profile_path = std::filesystem::path("profiles") / "default.json";
+    const std::filesystem::path profile_path = ResolveProfilePath(argc, argv);
+    if (profile_path.empty())
+    {
+        std::cerr << "Failed to resolve profile path." << std::endl;
+        return 1;
+    }
+
     Profile profile;
     std::string error_message;
     if (!LoadProfile(profile_path, profile, error_message))
