@@ -31,5 +31,6 @@
 ## Phase 5: Configurator Build Integration
 
 - Connect configurator actions to the runner build workflow.
+- Stage the built runner and a minimal manifest under `artifacts/`.
 - Surface profile selection, build status, and artifact location in the UI.
 - Add basic guardrails so only safe, supported benchmark configurations can be produced.

@@ -14,6 +14,7 @@ partial class MainForm
     private CheckBox jsonLoggingCheckBox;
     private Label checksLabel;
     private CheckedListBox checksCheckedListBox;
+    private Button buildButton;
     private Button saveButton;
     private Button reloadButton;
     private Label statusLabel;
@@ -55,6 +56,7 @@ partial class MainForm
         jsonLoggingCheckBox = new CheckBox();
         checksLabel = new Label();
         checksCheckedListBox = new CheckedListBox();
+        buildButton = new Button();
         saveButton = new Button();
         reloadButton = new Button();
         statusLabel = new Label();
@@ -168,7 +170,7 @@ partial class MainForm
         // 
         // saveButton
         // 
-        saveButton.Location = new Point(564, 448);
+        saveButton.Location = new Point(483, 448);
         saveButton.Name = "saveButton";
         saveButton.Size = new Size(75, 30);
         saveButton.TabIndex = 12;
@@ -176,12 +178,22 @@ partial class MainForm
         saveButton.UseVisualStyleBackColor = true;
         saveButton.Click += SaveButton_Click;
         // 
+        // buildButton
+        // 
+        buildButton.Location = new Point(564, 448);
+        buildButton.Name = "buildButton";
+        buildButton.Size = new Size(75, 30);
+        buildButton.TabIndex = 13;
+        buildButton.Text = "Build";
+        buildButton.UseVisualStyleBackColor = true;
+        buildButton.Click += BuildButton_Click;
+        // 
         // reloadButton
         // 
         reloadButton.Location = new Point(645, 448);
         reloadButton.Name = "reloadButton";
         reloadButton.Size = new Size(75, 30);
-        reloadButton.TabIndex = 13;
+        reloadButton.TabIndex = 14;
         reloadButton.Text = "Reload";
         reloadButton.UseVisualStyleBackColor = true;
         reloadButton.Click += ReloadButton_Click;
@@ -192,7 +204,7 @@ partial class MainForm
         statusLabel.Location = new Point(20, 456);
         statusLabel.Name = "statusLabel";
         statusLabel.Size = new Size(39, 15);
-        statusLabel.TabIndex = 14;
+        statusLabel.TabIndex = 15;
         statusLabel.Text = "Ready";
         // 
         // MainForm
@@ -202,6 +214,7 @@ partial class MainForm
         ClientSize = new Size(760, 520);
         Controls.Add(statusLabel);
         Controls.Add(reloadButton);
+        Controls.Add(buildButton);
         Controls.Add(saveButton);
         Controls.Add(checksCheckedListBox);
         Controls.Add(checksLabel);

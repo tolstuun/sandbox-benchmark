@@ -24,7 +24,7 @@ The project does not include:
 
 ## Architecture
 
-- `configurator/`: C# WinForms application on .NET 10 for loading, editing, and saving the benchmark profile used by the runner.
+- `configurator/`: C# WinForms application on .NET 10 for loading, editing, and saving the benchmark profile, then triggering a local runner build and artifact copy.
 - `runner/`: C++17 native runner built with CMake and MSVC. The runner loads a runtime profile, resolves requested checks from an internal registry, executes registered checks, and logs results.
 - `checks/`: definitions and organization for safe check categories and metadata.
 - `profiles/`: JSON profile data with selected check IDs and logging/output settings.
@@ -44,6 +44,7 @@ The project does not include:
 The repository currently contains:
 
 - a minimal WinForms configurator for editing the default benchmark profile
+- local configurator-driven runner build orchestration that stages outputs under `artifacts/`
 - a minimal profile contract in [profiles/default.json](/C:/dev/sandbox-benchmark/profiles/default.json)
 - a minimal runtime profile-loading path from `profiles/default.json`
 - a minimal internal check registry and execution pipeline
