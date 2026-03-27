@@ -1,7 +1,7 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Diagnostics;
 
 namespace SandboxBenchmark.Configurator;
 
@@ -16,12 +16,6 @@ public partial class MainForm : Form
         "env.storage.system_drive_total_gb"
     ];
 
-    private readonly JsonSerializerOptions _jsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-        WriteIndented = true
-    };
-
     private string? _profilePath;
     private string? _repoRoot;
 
@@ -32,12 +26,20 @@ public partial class MainForm : Form
         Load += MainForm_Load;
     }
 
+    internal static string RunHeadlessBuild()
+    {
+        var profilePath = ResolveProfilePath();
+        var repoRoot = ResolveRepoRoot(profilePath);
+        var profile = LoadProfileFromDisk(profilePath);
+        return BuildArtifact(profile, profilePath, repoRoot, _ => { });
+    }
+
     private void MainForm_Load(object? sender, EventArgs e)
     {
         try
         {
             _profilePath = ResolveProfilePath();
-            _repoRoot = Path.GetDirectoryName(Path.GetDirectoryName(_profilePath))!;
+            _repoRoot = ResolveRepoRoot(_profilePath);
             LoadProfileIntoForm(_profilePath);
         }
         catch (Exception exception)
@@ -57,8 +59,7 @@ public partial class MainForm : Form
         try
         {
             var profile = BuildProfileFromForm();
-            var json = JsonSerializer.Serialize(profile, _jsonOptions);
-            File.WriteAllText(_profilePath, json + Environment.NewLine, new UTF8Encoding(false));
+            SaveProfile(profile, _profilePath);
             statusLabel.Text = $"Saved {_profilePath}";
         }
         catch (Exception exception)
@@ -96,15 +97,12 @@ public partial class MainForm : Form
         try
         {
             var profile = BuildProfileFromForm();
-            SaveProfile(profile, _profilePath);
+            var artifactDirectory = BuildArtifact(profile, _profilePath, _repoRoot, message =>
+            {
+                statusLabel.Text = message;
+                Application.DoEvents();
+            });
 
-            statusLabel.Text = "Building runner...";
-            Application.DoEvents();
-
-            RunBuildCommand("cmake", "-S runner -B runner/build", _repoRoot);
-            RunBuildCommand("cmake", "--build runner/build --config Release", _repoRoot);
-
-            var artifactDirectory = CreateArtifact(profile, _profilePath, _repoRoot);
             var successMessage = $"Build succeeded. Artifact created at {artifactDirectory}";
             statusLabel.Text = successMessage;
             MessageBox.Show(this, successMessage, "Sandbox Benchmark Configurator", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -117,12 +115,7 @@ public partial class MainForm : Form
 
     private void LoadProfileIntoForm(string profilePath)
     {
-        var json = File.ReadAllText(profilePath, Encoding.UTF8);
-        var profile = JsonSerializer.Deserialize<ProfileDocument>(json);
-        if (profile is null)
-        {
-            throw new InvalidOperationException("Profile JSON could not be parsed.");
-        }
+        var profile = LoadProfileFromDisk(profilePath);
 
         profileIdValueLabel.Text = profile.ProfileId;
         profileNameTextBox.Text = profile.Name;
@@ -163,11 +156,67 @@ public partial class MainForm : Form
         };
     }
 
-    private void SaveProfile(ProfileDocument profile, string profilePath)
+    private static ProfileDocument LoadProfileFromDisk(string profilePath)
     {
-        var json = JsonSerializer.Serialize(profile, _jsonOptions);
+        var json = File.ReadAllText(profilePath, Encoding.UTF8);
+        var profile = JsonSerializer.Deserialize<ProfileDocument>(json);
+        if (profile is null)
+        {
+            throw new InvalidOperationException("Profile JSON could not be parsed.");
+        }
+
+        return profile;
+    }
+
+    private static string BuildArtifact(
+        ProfileDocument profile,
+        string profilePath,
+        string repoRoot,
+        Action<string> updateStatus)
+    {
+        SaveProfile(profile, profilePath);
+        GenerateEmbeddedProfile(profile, Path.Combine(repoRoot, "runner", "src", "embedded_profile.generated.h"));
+
+        updateStatus("Building runner...");
+        RunBuildCommand("cmake", "-S runner -B runner/build", repoRoot);
+        RunBuildCommand("cmake", "--build runner/build --config Release", repoRoot);
+
+        return CreateArtifact(profile, profilePath, repoRoot);
+    }
+
+    private static void SaveProfile(ProfileDocument profile, string profilePath)
+    {
+        var json = JsonSerializer.Serialize(profile, CreateJsonOptions());
         File.WriteAllText(profilePath, json + Environment.NewLine, new UTF8Encoding(false));
-        statusLabel.Text = $"Saved {profilePath}";
+    }
+
+    private static void GenerateEmbeddedProfile(ProfileDocument profile, string outputPath)
+    {
+        var json = JsonSerializer.Serialize(profile, CreateJsonOptions()) + Environment.NewLine;
+        var builder = new StringBuilder();
+        builder.AppendLine("#pragma once");
+        builder.AppendLine();
+        builder.AppendLine("namespace sandbox_benchmark");
+        builder.AppendLine("{");
+        builder.AppendLine("static constexpr const char kEmbeddedProfileJson[] =");
+
+        foreach (var line in json.Split('\n'))
+        {
+            var normalizedLine = line.TrimEnd('\r');
+            if (normalizedLine.Length == 0 && line.Length == 0)
+            {
+                continue;
+            }
+
+            builder.Append("  \"");
+            builder.Append(EscapeCppString(normalizedLine));
+            builder.AppendLine("\\n\"");
+        }
+
+        builder.AppendLine(";");
+        builder.AppendLine("} // namespace sandbox_benchmark");
+
+        File.WriteAllText(outputPath, builder.ToString(), new UTF8Encoding(false));
     }
 
     private static void RunBuildCommand(string fileName, string arguments, string workingDirectory)
@@ -208,7 +257,7 @@ public partial class MainForm : Form
         }
     }
 
-    private string CreateArtifact(ProfileDocument profile, string profilePath, string repoRoot)
+    private static string CreateArtifact(ProfileDocument profile, string profilePath, string repoRoot)
     {
         var buildId = DateTime.Now.ToString("yyyyMMdd-HHmmss");
         var artifactDirectory = Path.Combine(repoRoot, "artifacts", buildId);
@@ -218,25 +267,33 @@ public partial class MainForm : Form
         var artifactExeName = Path.GetFileName(sourceRunnerPath);
         var artifactRunnerPath = Path.Combine(artifactDirectory, artifactExeName);
         File.Copy(sourceRunnerPath, artifactRunnerPath, overwrite: true);
-        File.Copy(profilePath, Path.Combine(artifactDirectory, "profile.json"), overwrite: true);
 
         var manifest = new ArtifactManifest
         {
             BuildId = buildId,
             CreatedAt = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"),
             ProfilePath = profilePath,
-            ProfileFileName = "profile.json",
             SelectedChecks = profile.Checks,
             SourceRunnerPath = sourceRunnerPath,
             ArtifactExeName = artifactExeName,
-            SelfContainedArtifact = true
+            EmbeddedProfile = true,
+            ProfileOverrideSupported = true
         };
 
         var manifestPath = Path.Combine(artifactDirectory, "manifest.json");
-        var manifestJson = JsonSerializer.Serialize(manifest, _jsonOptions);
+        var manifestJson = JsonSerializer.Serialize(manifest, CreateJsonOptions());
         File.WriteAllText(manifestPath, manifestJson + Environment.NewLine, new UTF8Encoding(false));
 
         return artifactDirectory;
+    }
+
+    private static JsonSerializerOptions CreateJsonOptions()
+    {
+        return new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+            WriteIndented = true
+        };
     }
 
     private static string ResolveProfilePath()
@@ -254,6 +311,18 @@ public partial class MainForm : Form
         }
 
         throw new FileNotFoundException("Could not find profiles/default.json from the application directory.");
+    }
+
+    private static string ResolveRepoRoot(string profilePath)
+    {
+        return Path.GetDirectoryName(Path.GetDirectoryName(profilePath))!;
+    }
+
+    private static string EscapeCppString(string value)
+    {
+        return value
+            .Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("\"", "\\\"", StringComparison.Ordinal);
     }
 
     private static string TrimForDisplay(string value)
@@ -316,12 +385,12 @@ internal sealed class ArtifactManifest
     [JsonPropertyName("source_runner_path")]
     public string SourceRunnerPath { get; set; } = string.Empty;
 
-    [JsonPropertyName("profile_file_name")]
-    public string ProfileFileName { get; set; } = "profile.json";
-
     [JsonPropertyName("artifact_exe_name")]
     public string ArtifactExeName { get; set; } = string.Empty;
 
-    [JsonPropertyName("self_contained_artifact")]
-    public bool SelfContainedArtifact { get; set; }
+    [JsonPropertyName("embedded_profile")]
+    public bool EmbeddedProfile { get; set; }
+
+    [JsonPropertyName("profile_override_supported")]
+    public bool ProfileOverrideSupported { get; set; }
 }

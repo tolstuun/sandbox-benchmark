@@ -12,6 +12,7 @@
 #include <vector>
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include "embedded_profile.generated.h"
 
 enum class ResultStatus
 {
@@ -310,14 +311,8 @@ std::optional<std::vector<std::string>> ExtractJsonStringArrayField(
     return values;
 }
 
-bool LoadProfile(const std::filesystem::path& profile_path, Profile& profile, std::string& error_message)
+bool ParseProfileJson(const std::string& json_text, Profile& profile, std::string& error_message)
 {
-    const std::string json_text = ReadTextFile(profile_path, error_message);
-    if (!error_message.empty())
-    {
-        return false;
-    }
-
     const std::optional<std::string> profile_id = ExtractJsonStringField(json_text, "profile_id");
     const std::optional<std::string> name = ExtractJsonStringField(json_text, "name");
     const std::optional<int> version = ExtractJsonIntField(json_text, "version");
@@ -340,6 +335,22 @@ bool LoadProfile(const std::filesystem::path& profile_path, Profile& profile, st
     profile.console_logging_enabled = *console_logging_enabled;
     profile.json_logging_enabled = *json_logging_enabled;
     return true;
+}
+
+bool LoadProfile(const std::filesystem::path& profile_path, Profile& profile, std::string& error_message)
+{
+    const std::string json_text = ReadTextFile(profile_path, error_message);
+    if (!error_message.empty())
+    {
+        return false;
+    }
+
+    return ParseProfileJson(json_text, profile, error_message);
+}
+
+bool LoadEmbeddedProfile(Profile& profile, std::string& error_message)
+{
+    return ParseProfileJson(sandbox_benchmark::kEmbeddedProfileJson, profile, error_message);
 }
 
 std::string FormatTimestamp(std::chrono::system_clock::time_point time_point)
@@ -631,31 +642,35 @@ std::filesystem::path ResolveProfilePath(int argc, char* argv[])
         }
     }
 
-    const std::filesystem::path executable_path = GetExecutablePath();
-    if (executable_path.empty())
-    {
-        return {};
-    }
-
-    return executable_path.parent_path() / "profile.json";
+    return {};
 }
 } // namespace
 
 int main(int argc, char* argv[])
 {
     const std::filesystem::path profile_path = ResolveProfilePath(argc, argv);
-    if (profile_path.empty())
-    {
-        std::cerr << "Failed to resolve profile path." << std::endl;
-        return 1;
-    }
-
     Profile profile;
     std::string error_message;
-    if (!LoadProfile(profile_path, profile, error_message))
+    std::string profile_source;
+    if (!profile_path.empty())
     {
-        std::cerr << "Failed to load profile: " << error_message << std::endl;
-        return 1;
+        if (!LoadProfile(profile_path, profile, error_message))
+        {
+            std::cerr << "Failed to load profile: " << error_message << std::endl;
+            return 1;
+        }
+
+        profile_source = profile_path.string();
+    }
+    else
+    {
+        if (!LoadEmbeddedProfile(profile, error_message))
+        {
+            std::cerr << "Failed to load embedded profile: " << error_message << std::endl;
+            return 1;
+        }
+
+        profile_source = "embedded profile";
     }
 
     const std::map<std::string, CheckHandler> registry = BuildCheckRegistry();
@@ -665,7 +680,7 @@ int main(int argc, char* argv[])
 
     if (profile.console_logging_enabled)
     {
-        std::cout << "Loaded profile " << profile.profile_id << " from " << profile_path.string() << std::endl;
+        std::cout << "Loaded profile " << profile.profile_id << " from " << profile_source << std::endl;
         for (const CheckResult& result : results)
         {
             LogToConsole(result);
